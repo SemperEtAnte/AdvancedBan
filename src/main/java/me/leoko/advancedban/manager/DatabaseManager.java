@@ -2,6 +2,7 @@ package me.leoko.advancedban.manager;
 
 import com.zaxxer.hikari.HikariDataSource;
 import me.leoko.advancedban.Universal;
+import me.leoko.advancedban.utils.DatasourceType;
 import me.leoko.advancedban.utils.DynamicDataSource;
 import me.leoko.advancedban.utils.SQLQuery;
 
@@ -21,13 +22,14 @@ import java.sql.SQLException;
  * Use {@link PunishmentManager#getPunishments(SQLQuery, Object...)} or
  * {@link PunishmentManager#getPunishmentFromResultSet(ResultSet)} for already parsed data.
  */
-public class DatabaseManager {
+public class DatabaseManager
+{
 
     private HikariDataSource dataSource;
-    private boolean useMySQL;
+    private int type;
 
     private RowSetFactory factory;
-    
+
     private static DatabaseManager instance = null;
 
     /**
@@ -35,21 +37,30 @@ public class DatabaseManager {
      *
      * @return the database manager instance
      */
-    public static DatabaseManager get() {
+    public static DatabaseManager get()
+    {
         return instance == null ? instance = new DatabaseManager() : instance;
     }
 
+    public int getType()
+    {
+        return type;
+    }
     /**
      * Initially connects to the database and sets up the required tables of they don't already exist.
      *
-     * @param useMySQLServer whether to preferably use MySQL (uses HSQLDB as fallback)
+     * @param type type of database 0=>HSQL 1=> MySQL 2=> PostgreSQL
      */
-    public void setup(boolean useMySQLServer) {
-        useMySQL = useMySQLServer;
+    public void setup(int type)
+    {
+        this.type = type;
 
-        try {
-            dataSource = new DynamicDataSource(useMySQL).generateDataSource();
-        } catch (ClassNotFoundException ex) {
+        try
+        {
+            dataSource = new DynamicDataSource(type).generateDataSource();
+        }
+        catch (ClassNotFoundException ex)
+        {
             Universal.get().log("§cERROR: Failed to configure data source!");
             Universal.get().debug(ex.getMessage());
             return;
@@ -62,11 +73,16 @@ public class DatabaseManager {
     /**
      * Shuts down the HSQLDB if used.
      */
-    public void shutdown() {
-        if (!useMySQL) {
-            try(Connection connection = dataSource.getConnection(); final PreparedStatement statement = connection.prepareStatement("SHUTDOWN")){
+    public void shutdown()
+    {
+        if (type == DatasourceType.HSQL)
+        {
+            try (Connection connection = dataSource.getConnection(); final PreparedStatement statement = connection.prepareStatement("SHUTDOWN"))
+            {
                 statement.execute();
-            }catch (SQLException | NullPointerException exc){
+            }
+            catch (SQLException | NullPointerException exc)
+            {
                 Universal.get().log("An unexpected error has occurred turning off the database");
                 Universal.get().debugException(exc);
             }
@@ -74,12 +90,14 @@ public class DatabaseManager {
 
         dataSource.close();
     }
-    
-    private CachedRowSet createCachedRowSet() throws SQLException {
-    	if (factory == null) {
-    		factory = RowSetProvider.newFactory();
-    	}
-    	return factory.createCachedRowSet();
+
+    private CachedRowSet createCachedRowSet() throws SQLException
+    {
+        if (factory == null)
+        {
+            factory = RowSetProvider.newFactory();
+        }
+        return factory.createCachedRowSet();
     }
 
     /**
@@ -88,7 +106,8 @@ public class DatabaseManager {
      * @param sql        the sql statement
      * @param parameters the parameters
      */
-    public void executeStatement(SQLQuery sql, Object... parameters) {
+    public void executeStatement(SQLQuery sql, Object... parameters)
+    {
         executeStatement(sql, false, parameters);
     }
 
@@ -99,36 +118,46 @@ public class DatabaseManager {
      * @param parameters the parameters
      * @return the result set
      */
-    public ResultSet executeResultStatement(SQLQuery sql, Object... parameters) {
+    public ResultSet executeResultStatement(SQLQuery sql, Object... parameters)
+    {
         return executeStatement(sql, true, parameters);
     }
 
-    private ResultSet executeStatement(SQLQuery sql, boolean result, Object... parameters) {
+    private ResultSet executeStatement(SQLQuery sql, boolean result, Object... parameters)
+    {
         return executeStatement(sql.toString(), result, parameters);
     }
 
-    private synchronized ResultSet executeStatement(String sql, boolean result, Object... parameters) {
-    	try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
+    private synchronized ResultSet executeStatement(String sql, boolean result, Object... parameters)
+    {
+        try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql))
+        {
 
-    		for (int i = 0; i < parameters.length; i++) {
-    			statement.setObject(i + 1, parameters[i]);
-    		}
+            for (int i = 0; i < parameters.length; i++)
+            {
+                statement.setObject(i + 1, parameters[i]);
+            }
 
-    		if (result) {
-    			CachedRowSet results = createCachedRowSet();
-    			results.populate(statement.executeQuery());
-    			return results;
-    		}
-   			statement.execute();
-    	} catch (SQLException ex) {
-    		Universal.get().log(
-   					"An unexpected error has occurred executing an Statement in the database\n"
-   							+ "Please check the plugins/AdvancedBan/logs/latest.log file and report this "
-    						+ "error in: https://github.com/DevLeoko/AdvancedBan/issues"
-    				);
-    		Universal.get().debug("Query: \n" + sql);
-    		Universal.get().debugSqlException(ex);
-       	} catch (NullPointerException ex) {
+            if (result)
+            {
+                CachedRowSet results = createCachedRowSet();
+                results.populate(statement.executeQuery());
+                return results;
+            }
+            statement.execute();
+        }
+        catch (SQLException ex)
+        {
+            Universal.get().log(
+                    "An unexpected error has occurred executing an Statement in the database\n"
+                            + "Please check the plugins/AdvancedBan/logs/latest.log file and report this "
+                            + "error in: https://github.com/DevLeoko/AdvancedBan/issues"
+            );
+            Universal.get().debug("Query: \n" + sql);
+            Universal.get().debugSqlException(ex);
+        }
+        catch (NullPointerException ex)
+        {
             Universal.get().log(
                     "An unexpected error has occurred connecting to the database\n"
                             + "Check if your MySQL data is correct and if your MySQL-Server is online\n"
@@ -145,7 +174,8 @@ public class DatabaseManager {
      *
      * @return whether there is a valid connection
      */
-    public boolean isConnectionValid() {
+    public boolean isConnectionValid()
+    {
         return dataSource.isRunning();
     }
 
@@ -154,7 +184,8 @@ public class DatabaseManager {
      *
      * @return whether MySQL is used
      */
-    public boolean isUseMySQL() {
-        return useMySQL;
+    public boolean isUseMySQL()
+    {
+        return type != DatasourceType.HSQL;
     }
 }

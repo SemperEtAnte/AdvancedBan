@@ -39,7 +39,7 @@ public class BukkitMethods implements MethodInterface {
 
     private final File messageFile = new File(getDataFolder(), "Messages.yml");
     private final File layoutFile = new File(getDataFolder(), "Layouts.yml");
-    private final File mysqlFile = new File(getDataFolder(), "MySQL.yml");
+    private final File mysqlFile = new File(getDataFolder(), "SQL.yml");
     private YamlConfiguration config;
     private File configFile = new File(getDataFolder(), "config.yml");
     private YamlConfiguration messages;
