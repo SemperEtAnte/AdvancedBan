@@ -6,8 +6,8 @@
 
 # If set to false all bans will be saved locally in a HSQLDB-Database
 UseMySQL: false
-
-MySQL:
+DataStorageType: hsql
+SQL:
   IP: localhost
   DB-Name: database-name
   Username: admin

@@ -34,9 +34,10 @@ public class DynamicDataSource
                 properties = mi.getString(mi.getMySQLFile(), "SQL.Properties", "verifyServerCertificate=false&useSSL=false&useUnicode=true&characterEncoding=utf8");
                 port = mi.getInteger(mi.getMySQLFile(), "SQL.Port", 5432);
                 Class.forName("org.postgresql.Driver");
-                config.setJdbcUrl("jdbc:postgres://" + ip + ":" + port + "/" + dbName + "?" + properties);
+                config.setJdbcUrl("jdbc:postgresql://" + ip + ":" + port + "/" + dbName + "?" + properties);
                 config.setUsername(usrName);
                 config.setPassword(password);
+                System.out.println("Setted username " + usrName + " AND PASSWORD" + password);
                 break;
             default:
                 String driverClassName = "org.hsqldb.jdbc.JDBCDriver";
